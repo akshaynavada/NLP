@@ -7,6 +7,7 @@ from nltk.tokenize import word_tokenize
 import codecs
 import string
 import numpy as np
+from nltk.util import ngrams
 from nltk.stem import SnowballStemmer
 snowball_stemmer = SnowballStemmer('english')
 
@@ -75,13 +76,17 @@ class SA_NB_Classifier:
         # of occurence as the value
         self.word_count_dict = []
 
-    # determine if an input string is an valid word
+    # determine if an input
+    #  string is an valid word
     def valid_word(self,str):
+        return True
+        """
         if(str in string.punctuation):
             return False
         if(str.isdigit()):
             return False
         return True
+        """
     def is_ascii(self,s):
         return all(ord(c)<128 for c in s)
 
@@ -97,8 +102,7 @@ class SA_NB_Classifier:
             return ""
 
 
-
-    def negator(wordVec):
+    def negator(self,wordVec):
         negation = False
         negated_doc = []
         lemmatizer = WordNetLemmatizer()
@@ -113,32 +117,64 @@ class SA_NB_Classifier:
             elif (p[:2] == "RB"):
                 w_out = lemmatizer.lemmatize(w.lower(), pos=wordnet.ADV)
             if(w_out == "not" or w_out == "n't" ):
+                #print "blah"
                 negation = not negation
-            elif(w_out in string.punctuation):
+                #rint negation
+            elif(w_out in string.punctuation and w_out != ''):
+
                 negation = False
             elif(negation):
-            w   _out = "NOT_"+w
+                #print negation
+                w_out = "NOT_"+w_out
             negated_doc.append((w_out,p))
+        #print negated_doc
         return negated_doc
 
-    def doc_set_generator(self,rel_path):
+    def processDocument(self,doc,add_tag):
+        lemmatizer = WordNetLemmatizer()
+        word = nltk.word_tokenize(self.remove_non_ascii(doc))
+        tagged = nltk.pos_tag(word)
+        negated_words = self.negator(tagged)
+
+        tagged_word = ""
+        for w, p in negated_words:
+            if (p[:2] == "NN" or p[:2] == "JJ" or p[:2] == "VB" or p[:2] == "RB"):
+                if(add_tag):
+                    tagged_word += w + "_"+p+" "
+                else:
+                    tagged_word += w + " "
+        return tagged_word
+
+    def doc_set_generator(self,rel_path,add_tag = False):
         path = os.getcwd() + "/"+rel_path
         f = open(path,'r')
         doc_set = []
         for doc in f.read().split('\n'):
-            doc_set.append(doc)
+            doc_set.append(self.processDocument(doc,add_tag))
         return doc_set
     #return word_tokenize(f.read())
     # for a given class_dictionary and a given input file
     # we will update the class_dictionary based on the words
     # appeared in the input file
-    def count_word_per_file(self,doc,class_dict,binary):
+    def count_word_per_file(self,doc,class_dict,unigram = True,bigram = False ,binary =False):
         str = word_tokenize(self.remove_non_ascii(doc))
+        word_list = []
+        word_count = 0
+        if(unigram):
+            uni = ngrams(str,1)
+            word_count += self.count_word_per_file_sub(class_dict,uni,binary)
+
+        if(bigram):
+            bi = ngrams(str,2)
+            word_count += self.count_word_per_file_sub(class_dict,bi,binary)
+
+        return word_count
+
+    def count_word_per_file_sub(self,class_dict,grams,binary):
         word_count = 0
         doc_voc = {}
-        for word_ori in str:
-
-            word =
+        for word_ori in grams:
+            word = word_ori
             #word = self.stem_lower(word_ori)
             if(doc_voc.has_key(word) and binary == False):
                 if(self.valid_word(word)):
@@ -161,17 +197,30 @@ class SA_NB_Classifier:
 
     # in this function, we will update the dictionary for
     # the entire training dataset.
-    def count_word(self,doc,binary):
+
+
+    def count_word(self,doc,unigram = True,bigram = False,binary = False):
         str = word_tokenize(self.remove_non_ascii(doc))
         doc_voc = {}
-        for word_ori in str:
-            word = self.stem_lower(word_ori)
-            if(doc_voc.has_key(word) and binary == False):
-                if(self.valid_word(word)):
-                    if(self.train_dict.has_key(word)):
-                        self.train_dict[word] +=1
-                    else:
-                        self.train_dict[word] = 1
+        if(unigram):
+            uni = ngrams(str,1)
+            self.count_word_sub(doc_voc,uni,binary)
+
+        if(bigram):
+            bi = ngrams(str,2)
+            self.count_word_sub(doc_voc,bi,binary)
+
+
+
+    def count_word_sub(self,doc_voc,gram,binary):
+        for word in gram:
+            if(doc_voc.has_key(word)):
+                if(binary == False):
+                    if(self.valid_word(word)):
+                        if(self.train_dict.has_key(word)):
+                            self.train_dict[word] +=1
+                        else:
+                            self.train_dict[word] = 1
             else:
                 doc_voc[word] = 1
 
@@ -181,19 +230,49 @@ class SA_NB_Classifier:
                     else:
                         self.train_dict[word] = 1
 
+    def uni_bi_gram(self,doc,unigram,bigram):
+        ret_list = []
+        if(unigram):
+            uni = ngrams(doc,1)
+            for gram in uni:
+                ret_list.append(gram)
+        if(bigram):
+            bi = ngrams(doc,2)
+            for gram in bi:
+                ret_list.append(gram)
+        return ret_list
+
+
+
     # Given a test document, this function will
     # return a predicted label
-    def label_test_set(self,doc):
+    def label_test_set(self,doc,unigram,bigram,binary,alpha):
 
-        test_doc_token = word_tokenize(self.remove_non_ascii(doc))
+        test_doc = word_tokenize(self.remove_non_ascii(doc))
+        test_doc_token = self.uni_bi_gram(test_doc,unigram,bigram)
         prob_list = []
         for num in range(0,len(self.class_list)):
             prob = 0
-            denominator = float(self.class_word_count[num]+self.train_word_count)
-            for word_ori in test_doc_token:
-                word = self.stem_lower(word_ori)
+            denominator = float(self.class_word_count[num])+ float(self.train_word_count)*alpha
+            test_doc_word = {}
+            test_doc_token_new = []
+            if(binary == True):
+                for word  in test_doc_token:
+                    if(not test_doc_word.has_key(word)):
+                        test_doc_word[word] = 1
+                        test_doc_token_new.append(word)
+
+
+            else:
+                test_doc_token_new = test_doc_token
+
+            for word_ori in test_doc_token_new:
+                word = word_ori
+
+
+
                 if(self.valid_word(word)):
-                    numerator = float(1)
+                    numerator = float(alpha)
                     if (self.word_count_dict[num].has_key(word)):
                         numerator = float(self.word_count_dict[num][word])
                     prob += np.log(float(numerator)/float(denominator))
@@ -204,7 +283,7 @@ class SA_NB_Classifier:
 
 
 
-    def read_and_train(self,doc_set,sentiment,binary):
+    def read_and_train(self,doc_set,sentiment,unigram,bigram,binary):
         print "adding files..."
         counter = 0
         classname = sentiment
@@ -224,20 +303,20 @@ class SA_NB_Classifier:
         self.class_word_count.append(0)
 
         for doc in doc_set:
-            num_words = self.count_word_per_file(doc,self.word_count_dict[len(self.word_count_dict)-1],binary)
+            num_words = self.count_word_per_file(doc,self.word_count_dict[len(self.word_count_dict)-1],unigram,bigram,binary)
             self.class_word_count[len(self.class_word_count)-1] += num_words
-            self.count_word(doc,binary)
+            self.count_word(doc,unigram,bigram,binary)
 
         self.train_word_count = len(self.train_dict)
         #print "word counter is ",self.train_word_count,"start is", start, "end is",end, "training number is",self.total_class_count
 
-    def label_test_files(self,doc_set,sentiment):
+    def label_test_files(self,doc_set,sentiment,unigram,bigram,binary,alpha =1):
         print "predicting labels for test files..."
         self.correct_test_case = 0
         self.total_test_case = 0
         for doc in doc_set:
             #print doc
-            label = self.label_test_set(doc)
+            label = self.label_test_set(doc,unigram,bigram,binary,alpha)
             if (label == sentiment):
                 self.correct_test_case += 1
             self.total_test_case +=1
@@ -249,32 +328,12 @@ class SA_NB_Classifier:
         c = float(self.correct_test_case)
         t = float(self.total_test_case)
         print "Accuracy is :",c/t
-
-instance = SA_NB_Classifier();
-train_p_doc_set = instance.doc_set_generator("positive.test")
-train_n_doc_set = instance.doc_set_generator("negative.test")
-instance.read_and_train(train_p_doc_set,"pos",True)
-instance.read_and_train(train_n_doc_set,"neg",True)
+        return c/t
 
 
 
-print "####################################"
-
-print"I love him",instance.label_test_set("I love him")
-print instance.label_test_set("I hate him")
-print instance.label_test_set("I like him")
-print instance.label_test_set("I dislike him")
-print instance.label_test_set("I am fine with him")
-
-print "####################################"
 
 
 
-test_p_doc_set = instance.doc_set_generator("positive.test")
-test_n_doc_set = instance.doc_set_generator("negative.test")
 
-instance.label_test_files(test_p_doc_set,"pos")
-instance.label_test_files(test_n_doc_set,"neg")
 
-instance.print_accuracy()
-print "good"
