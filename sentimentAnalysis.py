@@ -98,24 +98,21 @@ def obtaindata(pos_file, neg_file, vectorizer=0, tfidf_transformer=0, input_data
         pos_contents = open(pos_file, "r").read()
         neg_contents = open(neg_file, "r").read()
 
-        counter = 0;
+        counter = 0
         for doc in pos_contents.split('\n'):
                 if( K == 0 or ( (counter%K) != remainder and train) or ( (counter%K) == remainder and not train) ):
-
                     tagged_word = processDocument(doc)
                     text.append(tagged_word)
                     labels.append("pos")
                 counter +=1
-        counter = 0;
+        counter = 0
         for doc in neg_contents.split('\n'):
                  if( K==0 or ( (counter%K) != remainder and train) or ( (counter%K) == remainder and not train) ):
                     tagged_word = processDocument(doc)
                     text.append(tagged_word)
                     labels.append("neg")
                  counter +=1
-
-
-    n = 2
+    n = 2#bigram
     print("creating " + str(n) + "-grams")
     if (vectorizer == 0):
         vectorizer = CountVectorizer(ngram_range=(1, n),binary=True)
@@ -170,33 +167,39 @@ def k_fold_CV(K,pos_file,neg_file):
 
 ##Main Function
 
-print(k_fold_CV(10,"positive.parsed","negative.parsed"))
 
-# try:
-#     testing = eval(input("Press 1 to test files. Press 2 to test custom input.\nPress any other key to train\n"))
-# except:
-#     testing = 4
-# if (testing == 1):
-#     print("Testing Files Selected")
-# elif (testing == 2):
-#     print("Testing custom input selected")
-# else:
-#     print("Training Selected")
-# if (testing != 2):
-#     pos_file = input("Positive File Name: ")
-#     neg_file = input("Negative File Name: ")
-#     print("Positive file selected: " + pos_file + "\nNegative file name: " + neg_file)
-#
-# if (testing == 1):
-#     print("Testing:...")
-#     if (test(pos_file, neg_file) == 0):
-#         print("Classifier Not Trained")
-# elif (testing == 2):
-#     input_text = input("Enter Text to categorize: ")
-#     if (test(0, 0, input_text) == 0):
-#         print("Classifier Not Trained")
-# else:
-#     print("Training:...")
-#     train(pos_file, neg_file)
-#
-# print("done")
+
+try:
+    testing = eval(input("Press 1 to test files. Press 2 to test custom input.\nPress 3 to do k-fold Cross Validationon file\nPress any other key to train\n"))
+except:
+    testing = 4
+
+if (testing == 1):
+    print("Testing Files Selected")
+    pos_file = input("Positive File Name: ")
+    neg_file = input("Negative File Name: ")
+    print("Positive file selected: " + pos_file + "\nNegative file name: " + neg_file)
+    print("Testing:...")
+    if (test(pos_file, neg_file) == 0):
+        print("Classifier Not Trained")
+elif (testing == 2):
+    print("Testing custom input selected")
+    input_text = input("Enter Text to categorize: ")
+    if (test(0, 0, input_text) == 0):
+        print("Classifier Not Trained")
+elif (testing == 3):
+    print("Performing K-Fold Cross Validation")
+    pos_file = input("Positive File Name: ")
+    neg_file = input("Negative File Name: ")
+    print("Positive file selected: " + pos_file + "\nNegative file name: " + neg_file)
+    k_value = eval(input("Enter k- value"))
+    print(k_fold_CV(k_value,pos_file,neg_file))
+else:
+    print("Training Selected")
+    pos_file = input("Positive File Name: ")
+    neg_file = input("Negative File Name: ")
+    print("Positive file selected: " + pos_file + "\nNegative file name: " + neg_file)
+    print("Training:...")
+    train(pos_file, neg_file)
+
+print("done")
