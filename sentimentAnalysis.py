@@ -68,7 +68,7 @@ def processDocument(doc):
     tagged_word = ""
     for w, p in negated_words:
         if (p[:2] == "NN" or p[:2] == "JJ" or p[:2] == "VB" or p[:2] == "RB"):
-            tagged_word += w +"_"+p+" "
+            tagged_word += w + "_"+p+" "
     return tagged_word
 
 
@@ -116,6 +116,7 @@ def obtaindata(pos_file, neg_file, vectorizer=0, tfidf_transformer=0, input_data
     return (X_train_tf, labels)
 
 
+
 def train(pos_file, neg_file,K=0,remainder=0):
     training_set, label_set = obtaindata(pos_file, neg_file,0,0,0,K,remainder,True)
     print("Training Support vector machine")
@@ -135,6 +136,7 @@ def test(pos_file, neg_file, input_text=0,K=0,remainder=0):
         predicted_labels = classifier.predict(testing_data)
         accuracy = np.mean(predicted_labels == actual_labels)
         print("accuracy: "+str(accuracy*100.0)+"%")
+        saveOutput("SVM+unigram+bigram+binary+POS",str(accuracy),"results.txt")
     else:
         testing_data, actual_labels = obtaindata(0, 0, vectorizer, tfidf_transformer, input_text)
         predicted_labels = classifier.predict(testing_data)
@@ -149,7 +151,11 @@ def k_fold_CV(K,pos_file,neg_file):
     return accuracy_i/K
 
 
-
+def saveOutput(message,accuracy,outfile):
+    outf = open(outfile,"a")
+    str = message + "," + accuracy+"\n"
+    outf.write(str)
+    outf.close()
 
 ##Main Function
 
