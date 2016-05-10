@@ -1,0 +1,8 @@
+SVM+bigram+unigram+POS+binary,0.903579827541
+SVM+bigram+unigram+POS+Frequency,0.90253462242
+SVM+unigram+Binary,0.876927096943
+SVM+bigram+Binary,0.8748366867
+SVM+unigram+bigram+Binary,0.89574078913
+SVM+unigram+frequency,0.879017507186
+SVM+bigram+frequency,0.873791481578
+SVM+unigram+bigram+frequency,0.893911680167
