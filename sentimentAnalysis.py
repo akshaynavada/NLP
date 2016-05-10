@@ -66,23 +66,9 @@ def processDocument(doc):
     tagged = nltk.pos_tag(word)
     negated_words = negator(tagged)
     tagged_word = ""
-
-    # for w, p in negated_words:
-    #     if (p[:2] == "NN"):
-    #         out = lemmatizer.lemmatize(w, pos=wordnet.NOUN)
-    #         tagged_word += out + "_" + p + " "
-    #     elif (p[:2] == "JJ"):
-    #         out = lemmatizer.lemmatize(w, pos=wordnet.ADJ)
-    #         tagged_word += out + "_" + p + " "
-    #     elif (p[:2] == "VB"):
-    #         out = lemmatizer.lemmatize(w, pos=wordnet.VERB)
-    #         tagged_word += out + "_" + p + " "
-    #     elif (p[:2] == "RB"):
-    #         out = lemmatizer.lemmatize(w, pos=wordnet.ADV)
-    #         tagged_word += out + "_" + p + " "
     for w, p in negated_words:
         if (p[:2] == "NN" or p[:2] == "JJ" or p[:2] == "VB" or p[:2] == "RB"):
-            tagged_word += w +" "
+            tagged_word += w +"_"+p+" "
     return tagged_word
 
 
