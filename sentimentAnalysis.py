@@ -53,7 +53,7 @@ def negator(wordVec):
             w_out = lemmatizer.lemmatize(w.lower(), pos=wordnet.ADV)
         if(w_out == "not" or w_out == "n't" ):
             negation = not negation
-        elif(w_out in string.punctuation):
+        elif(w_out in string.punctuation or w_out == "\""):
             negation = False
         elif(negation):
             w_out = "NOT_"+w
